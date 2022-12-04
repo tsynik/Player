@@ -99,6 +99,7 @@ import com.brouken.player.dtpv.youtube.YouTubeOverlay;
 import com.getkeepsafe.taptargetview.TapTarget;
 import com.getkeepsafe.taptargetview.TapTargetView;
 import com.google.android.material.snackbar.Snackbar;
+import com.homesoft.exo.extractor.AviExtractorsFactory;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -1162,17 +1163,19 @@ public class PlayerActivity extends Activity {
         trackSelector.setParameters(trackSelector.buildUponParameters()
                 .setPreferredAudioLanguages(Utils.getDeviceLanguages())
         );
-        // https://github.com/google/ExoPlayer/issues/8571
-        DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory()
-                .setTsExtractorFlags(DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS)
-                .setTsExtractorTimestampSearchBytes(1500 * TsExtractor.TS_PACKET_SIZE);
         @SuppressLint("WrongConstant") RenderersFactory renderersFactory = new DefaultRenderersFactory(this)
                 .setExtensionRendererMode(mPrefs.decoderPriority)
                 .setMapDV7ToHevc(mPrefs.mapDV7ToHevc);
 
+        AviExtractorsFactory aviExtractorsFactory = new AviExtractorsFactory();
+        aviExtractorsFactory.getDefaultExtractorsFactory()
+                // https://github.com/google/ExoPlayer/issues/8571
+                .setTsExtractorFlags(DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS)
+                .setTsExtractorTimestampSearchBytes(1500 * TsExtractor.TS_PACKET_SIZE);
+
         ExoPlayer.Builder playerBuilder = new ExoPlayer.Builder(this, renderersFactory)
                 .setTrackSelector(trackSelector)
-                .setMediaSourceFactory(new DefaultMediaSourceFactory(this, extractorsFactory));
+                .setMediaSourceFactory(new DefaultMediaSourceFactory(this, aviExtractorsFactory));
 
         if (haveMedia && isNetworkUri) {
             if (mPrefs.mediaUri.getScheme().toLowerCase().startsWith("http")) {
@@ -1182,7 +1185,7 @@ public class PlayerActivity extends Activity {
                     headers.put("Authorization", "Basic " + Base64.encodeToString(userInfo.getBytes(),Base64.NO_WRAP));
                     DefaultHttpDataSource.Factory defaultHttpDataSourceFactory = new DefaultHttpDataSource.Factory();
                     defaultHttpDataSourceFactory.setDefaultRequestProperties(headers);
-                    playerBuilder.setMediaSourceFactory(new DefaultMediaSourceFactory(defaultHttpDataSourceFactory, extractorsFactory));
+                    playerBuilder.setMediaSourceFactory(new DefaultMediaSourceFactory(defaultHttpDataSourceFactory, aviExtractorsFactory.getDefaultExtractorsFactory()));
                 }
             }
         }
@@ -1202,6 +1205,9 @@ public class PlayerActivity extends Activity {
         youTubeOverlay.player(player);
         playerView.setPlayer(player);
 
+        if (mediaSession != null) {
+            mediaSession.release();
+        }
         mediaSession = new MediaSession.Builder(this, player).build();
 
 //        MediaSessionConnector mediaSessionConnector = new MediaSessionConnector(mediaSession);
