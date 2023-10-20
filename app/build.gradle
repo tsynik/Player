@@ -9,8 +9,10 @@ android {
 
     defaultConfig {
         applicationId "com.brouken.player"
-        minSdkVersion 21
+        minSdkVersion 19
         targetSdkVersion 34
+        // for older androids
+        multiDexEnabled true
         versionCode 152
         versionName "0.${versionCode}"
         archivesBaseName = "Just.Player.v${versionName}"
@@ -72,7 +74,9 @@ android {
 
 dependencies {
     def media3_version = '1.1.1'
-    def androidxCoreVersion = '1.8.0'
+    def androidxCoreVersion = '1.12.0'
+    // multidex
+    implementation 'androidx.multidex:multidex:2.0.1'
     implementation "androidx.media3:media3-session:$media3_version"
     implementation "androidx.media3:media3-datasource:$media3_version"
     implementation "androidx.media3:media3-decoder:$media3_version"
@@ -91,7 +95,7 @@ dependencies {
         exclude group: "androidx.media3", module: "media3-exoplayer"
     }
     implementation 'com.getkeepsafe.taptargetview:taptargetview:1.13.3'
-    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'com.google.android.material:material:1.10.0'
     implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
     implementation "androidx.core:core:$androidxCoreVersion"
     fullImplementation 'com.ibm.icu:icu4j:73.2'

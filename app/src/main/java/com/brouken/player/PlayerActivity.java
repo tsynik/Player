@@ -112,6 +112,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+
 public class PlayerActivity extends Activity {
 
     private PlayerListener playerListener;
@@ -190,8 +191,6 @@ public class PlayerActivity extends Activity {
     public static boolean restoreControllerTimeout = false;
     public static boolean shortControllerTimeout = false;
 
-    final Rational rationalLimitWide = new Rational(239, 100);
-    final Rational rationalLimitTall = new Rational(100, 239);
 
     static final String API_POSITION = "position";
     static final String API_DURATION = "duration";
@@ -338,7 +337,7 @@ public class PlayerActivity extends Activity {
         playerView.setControllerHideOnTouch(false);
         playerView.setControllerAutoShow(true);
 
-        ((DoubleTapPlayerView)playerView).setDoubleTapEnabled(false);
+        ((DoubleTapPlayerView) playerView).setDoubleTapEnabled(false);
 
         timeBar = playerView.findViewById(R.id.exo_progress);
         timeBar.addListener(new TimeBar.OnScrubListener() {
@@ -386,7 +385,11 @@ public class PlayerActivity extends Activity {
             }
         });
 
-        buttonOpen = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            buttonOpen = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+        } else {
+            buttonOpen = new ImageButton(this, null, 0);
+        }
         buttonOpen.setImageResource(R.drawable.ic_folder_open_24dp);
         buttonOpen.setId(View.generateViewId());
         buttonOpen.setContentDescription(getString(R.string.button_open));
@@ -409,7 +412,11 @@ public class PlayerActivity extends Activity {
             boolean success = updatePictureInPictureActions(R.drawable.ic_play_arrow_24dp, R.string.exo_controls_play_description, CONTROL_TYPE_PLAY, REQUEST_PLAY);
 
             if (success) {
-                buttonPiP = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                    buttonPiP = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+                } else {
+                    buttonPiP = new ImageButton(this, null, 0);
+                }
                 buttonPiP.setContentDescription(getString(R.string.button_pip));
                 buttonPiP.setImageResource(R.drawable.ic_picture_in_picture_alt_24dp);
 
@@ -417,7 +424,11 @@ public class PlayerActivity extends Activity {
             }
         }
 
-        buttonAspectRatio = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            buttonAspectRatio = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+        } else {
+            buttonAspectRatio = new ImageButton(this, null, 0);
+        }
         buttonAspectRatio.setId(Integer.MAX_VALUE - 100);
         buttonAspectRatio.setContentDescription(getString(R.string.button_crop));
         updatebuttonAspectRatioIcon();
@@ -441,7 +452,11 @@ public class PlayerActivity extends Activity {
                 return true;
             });
         }
-        buttonRotation = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            buttonRotation = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+        } else {
+            buttonRotation = new ImageButton(this, null, 0);
+        }
         buttonRotation.setContentDescription(getString(R.string.button_rotate));
         updateButtonRotation();
         buttonRotation.setOnClickListener(view -> {
@@ -487,55 +502,56 @@ public class PlayerActivity extends Activity {
         });
 
         controlView = playerView.findViewById(R.id.exo_controller);
-        controlView.setOnApplyWindowInsetsListener((view, windowInsets) -> {
-            if (windowInsets != null) {
-                if (Build.VERSION.SDK_INT >= 31) {
-                    boolean visibleBars = windowInsets.isVisible(WindowInsets.Type.statusBars());
-                    if (visibleBars && !controllerVisible) {
-                        playerView.postDelayed(barsHider, 2500);
-                    } else {
-                        playerView.removeCallbacks(barsHider);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP)
+            controlView.setOnApplyWindowInsetsListener((view, windowInsets) -> {
+                if (windowInsets != null) {
+                    if (Build.VERSION.SDK_INT >= 31) {
+                        boolean visibleBars = windowInsets.isVisible(WindowInsets.Type.statusBars());
+                        if (visibleBars && !controllerVisible) {
+                            playerView.postDelayed(barsHider, 2500);
+                        } else {
+                            playerView.removeCallbacks(barsHider);
+                        }
                     }
+
+                    view.setPadding(0, windowInsets.getSystemWindowInsetTop(),
+                            0, windowInsets.getSystemWindowInsetBottom());
+
+                    int insetLeft = windowInsets.getSystemWindowInsetLeft();
+                    int insetRight = windowInsets.getSystemWindowInsetRight();
+
+                    int paddingLeft = 0;
+                    int marginLeft = insetLeft;
+
+                    int paddingRight = 0;
+                    int marginRight = insetRight;
+
+                    if (Build.VERSION.SDK_INT >= 28 && windowInsets.getDisplayCutout() != null) {
+                        if (windowInsets.getDisplayCutout().getSafeInsetLeft() == insetLeft) {
+                            paddingLeft = insetLeft;
+                            marginLeft = 0;
+                        }
+                        if (windowInsets.getDisplayCutout().getSafeInsetRight() == insetRight) {
+                            paddingRight = insetRight;
+                            marginRight = 0;
+                        }
+                    }
+
+                    Utils.setViewParams(titleView, paddingLeft + titleViewPaddingHorizontal, titleViewPaddingVertical, paddingRight + titleViewPaddingHorizontal, titleViewPaddingVertical,
+                            marginLeft, windowInsets.getSystemWindowInsetTop(), marginRight, 0);
+
+                    Utils.setViewParams(findViewById(R.id.exo_bottom_bar), paddingLeft, 0, paddingRight, 0,
+                            marginLeft, 0, marginRight, 0);
+
+                    findViewById(R.id.exo_progress).setPadding(windowInsets.getSystemWindowInsetLeft(), 0,
+                            windowInsets.getSystemWindowInsetRight(), 0);
+
+                    Utils.setViewMargins(findViewById(R.id.exo_error_message), 0, windowInsets.getSystemWindowInsetTop() / 2, 0, getResources().getDimensionPixelSize(R.dimen.exo_error_message_margin_bottom) + windowInsets.getSystemWindowInsetBottom() / 2);
+
+                    windowInsets.consumeSystemWindowInsets();
                 }
-
-                view.setPadding(0, windowInsets.getSystemWindowInsetTop(),
-                        0, windowInsets.getSystemWindowInsetBottom());
-
-                int insetLeft = windowInsets.getSystemWindowInsetLeft();
-                int insetRight = windowInsets.getSystemWindowInsetRight();
-
-                int paddingLeft = 0;
-                int marginLeft = insetLeft;
-
-                int paddingRight = 0;
-                int marginRight = insetRight;
-
-                if (Build.VERSION.SDK_INT >= 28 && windowInsets.getDisplayCutout() != null) {
-                    if (windowInsets.getDisplayCutout().getSafeInsetLeft() == insetLeft) {
-                        paddingLeft = insetLeft;
-                        marginLeft = 0;
-                    }
-                    if (windowInsets.getDisplayCutout().getSafeInsetRight() == insetRight) {
-                        paddingRight = insetRight;
-                        marginRight = 0;
-                    }
-                }
-
-                Utils.setViewParams(titleView, paddingLeft + titleViewPaddingHorizontal, titleViewPaddingVertical, paddingRight + titleViewPaddingHorizontal, titleViewPaddingVertical,
-                        marginLeft, windowInsets.getSystemWindowInsetTop(), marginRight, 0);
-
-                Utils.setViewParams(findViewById(R.id.exo_bottom_bar), paddingLeft, 0, paddingRight, 0,
-                        marginLeft, 0, marginRight, 0);
-
-                findViewById(R.id.exo_progress).setPadding(windowInsets.getSystemWindowInsetLeft(), 0,
-                        windowInsets.getSystemWindowInsetRight(), 0);
-
-                Utils.setViewMargins(findViewById(R.id.exo_error_message), 0, windowInsets.getSystemWindowInsetTop() / 2, 0, getResources().getDimensionPixelSize(R.dimen.exo_error_message_margin_bottom) + windowInsets.getSystemWindowInsetBottom() / 2);
-
-                windowInsets.consumeSystemWindowInsets();
-            }
-            return windowInsets;
-        });
+                return windowInsets;
+            });
         timeBar.setAdMarkerColor(Color.argb(0x00, 0xFF, 0xFF, 0xFF));
         timeBar.setPlayedAdMarkerColor(Color.argb(0x98, 0xFF, 0xFF, 0xFF));
 
@@ -1321,7 +1337,7 @@ public class PlayerActivity extends Activity {
 
             updateButtons(true);
 
-            ((DoubleTapPlayerView)playerView).setDoubleTapEnabled(true);
+            ((DoubleTapPlayerView) playerView).setDoubleTapEnabled(true);
 
             if (!apiAccess) {
                 if (nextUriThread != null) {
@@ -1493,8 +1509,9 @@ public class PlayerActivity extends Activity {
                             }
                             updateButtonRotation();
                         }
-
-                        updateSubtitleViewMargin(format);
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                            updateSubtitleViewMargin(format);
+                        }
                     }
 
                     if (duration != C.TIME_UNSET && duration > TimeUnit.MINUTES.toMillis(20)) {
@@ -1691,7 +1708,7 @@ public class PlayerActivity extends Activity {
     }
 
     private TrackGroup getTrackGroupFromFormatId(int trackType, String id) {
-        if ((id == null && trackType == C.TRACK_TYPE_AUDIO ) || player == null) {
+        if ((id == null && trackType == C.TRACK_TYPE_AUDIO) || player == null) {
             return null;
         }
         for (Tracks.Group group : player.getCurrentTracks().getGroups()) {
@@ -1719,7 +1736,8 @@ public class PlayerActivity extends Activity {
 
         TrackSelectionParameters.Builder overridesBuilder = new TrackSelectionParameters.Builder(this);
         TrackSelectionOverride trackSelectionOverride = null;
-        final List<Integer> tracks = new ArrayList<>(); tracks.add(0);
+        final List<Integer> tracks = new ArrayList<>();
+        tracks.add(0);
         if (subtitleGroup != null) {
             trackSelectionOverride = new TrackSelectionOverride(subtitleGroup, tracks);
             overridesBuilder.addOverride(trackSelectionOverride);
@@ -1788,7 +1806,7 @@ public class PlayerActivity extends Activity {
                 size = SubtitleView.DEFAULT_TEXT_SIZE_FRACTION * subtitlesScale;
             } else {
                 DisplayMetrics metrics = getResources().getDisplayMetrics();
-                float ratio = ((float)metrics.heightPixels / (float)metrics.widthPixels);
+                float ratio = ((float) metrics.heightPixels / (float) metrics.widthPixels);
                 if (ratio < 1)
                     ratio = 1 / ratio;
                 size = SubtitleView.DEFAULT_TEXT_SIZE_FRACTION * subtitlesScale / ratio;
@@ -1806,7 +1824,8 @@ public class PlayerActivity extends Activity {
         updateSubtitleViewMargin(player.getVideoFormat());
     }
 
-    // Set margins to fix PGS aspect as subtitle view is outside of content frame
+    @TargetApi(21)
+        // Set margins to fix PGS aspect as subtitle view is outside of content frame
     void updateSubtitleViewMargin(Format format) {
         if (format == null) {
             return;
@@ -1940,14 +1959,28 @@ public class PlayerActivity extends Activity {
         if (subtitleView != null) {
             final CaptioningManager.CaptionStyle userStyle = captioningManager.getUserStyle();
             final CaptionStyleCompat userStyleCompat = CaptionStyleCompat.createFromCaptionStyle(userStyle);
-            final CaptionStyleCompat captionStyle = new CaptionStyleCompat(
-                    userStyle.hasForegroundColor() ? userStyleCompat.foregroundColor : Color.WHITE,
-                    userStyle.hasBackgroundColor() ? userStyleCompat.backgroundColor : Color.TRANSPARENT,
-                    userStyle.hasWindowColor() ? userStyleCompat.windowColor : Color.TRANSPARENT,
-                    userStyle.hasEdgeType() ? userStyleCompat.edgeType : CaptionStyleCompat.EDGE_TYPE_OUTLINE,
-                    userStyle.hasEdgeColor() ? userStyleCompat.edgeColor : Color.BLACK,
-                    Typeface.create(userStyleCompat.typeface != null ? userStyleCompat.typeface : Typeface.DEFAULT,
-                            mPrefs.subtitleStyleBold ? Typeface.BOLD : Typeface.NORMAL));
+            final CaptionStyleCompat captionStyle;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                captionStyle = new CaptionStyleCompat(
+                        userStyle.hasForegroundColor() ? userStyleCompat.foregroundColor : Color.WHITE,
+                        userStyle.hasBackgroundColor() ? userStyleCompat.backgroundColor : Color.TRANSPARENT,
+                        userStyle.hasWindowColor() ? userStyleCompat.windowColor : Color.TRANSPARENT,
+                        userStyle.hasEdgeType() ? userStyleCompat.edgeType : CaptionStyleCompat.EDGE_TYPE_OUTLINE,
+                        userStyle.hasEdgeColor() ? userStyleCompat.edgeColor : Color.BLACK,
+                        Typeface.create(userStyleCompat.typeface != null ? userStyleCompat.typeface : Typeface.DEFAULT,
+                                mPrefs.subtitleStyleBold ? Typeface.BOLD : Typeface.NORMAL));
+
+            } else {
+                captionStyle = new CaptionStyleCompat(
+                        Color.WHITE,
+                        Color.TRANSPARENT,
+                        Color.TRANSPARENT,
+                        CaptionStyleCompat.EDGE_TYPE_OUTLINE,
+                        Color.BLACK,
+                        Typeface.create(userStyleCompat.typeface != null ? userStyleCompat.typeface : Typeface.DEFAULT,
+                                mPrefs.subtitleStyleBold ? Typeface.BOLD : Typeface.NORMAL)
+                );
+            }
             subtitleView.setStyle(captionStyle);
             subtitleView.setApplyEmbeddedStyles(mPrefs.subtitleStyleEmbedded);
             subtitleView.setBottomPaddingFraction(SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION * 2f / 3f);
@@ -2091,7 +2124,7 @@ public class PlayerActivity extends Activity {
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onUserLeaveHint() {
-        if (mPrefs!= null && mPrefs.autoPiP && player != null && player.isPlaying() && Utils.isPiPSupported(this))
+        if (mPrefs != null && mPrefs.autoPiP && player != null && player.isPlaying() && Utils.isPiPSupported(this))
             enterPiP();
         else
             super.onUserLeaveHint();
@@ -2099,6 +2132,8 @@ public class PlayerActivity extends Activity {
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void enterPiP() {
+        final Rational rationalLimitWide = new Rational(239, 100);
+        final Rational rationalLimitTall = new Rational(100, 239);
         final AppOpsManager appOpsManager = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
         if (AppOpsManager.MODE_ALLOWED != appOpsManager.checkOpNoThrow(AppOpsManager.OPSTR_PICTURE_IN_PICTURE, android.os.Process.myUid(), getPackageName())) {
             final Intent intent = new Intent("android.settings.PICTURE_IN_PICTURE_SETTINGS", Uri.fromParts("package", getPackageName(), null));
@@ -2122,23 +2157,23 @@ public class PlayerActivity extends Activity {
             // TODO: Test/disable on Android 11+
             final View videoSurfaceView = playerView.getVideoSurfaceView();
             if (videoSurfaceView instanceof SurfaceView) {
-                ((SurfaceView)videoSurfaceView).getHolder().setFixedSize(format.width, format.height);
+                ((SurfaceView) videoSurfaceView).getHolder().setFixedSize(format.width, format.height);
             }
 
             Rational rational = Utils.getRational(format);
             if (Build.VERSION.SDK_INT >= 33 &&
                     getPackageManager().hasSystemFeature(FEATURE_EXPANDED_PICTURE_IN_PICTURE) &&
                     (rational.floatValue() > rationalLimitWide.floatValue() || rational.floatValue() < rationalLimitTall.floatValue())) {
-                ((PictureInPictureParams.Builder)mPictureInPictureParamsBuilder).setExpandedAspectRatio(rational);
+                ((PictureInPictureParams.Builder) mPictureInPictureParamsBuilder).setExpandedAspectRatio(rational);
             }
             if (rational.floatValue() > rationalLimitWide.floatValue())
                 rational = rationalLimitWide;
             else if (rational.floatValue() < rationalLimitTall.floatValue())
                 rational = rationalLimitTall;
 
-            ((PictureInPictureParams.Builder)mPictureInPictureParamsBuilder).setAspectRatio(rational);
+            ((PictureInPictureParams.Builder) mPictureInPictureParamsBuilder).setAspectRatio(rational);
         }
-        enterPictureInPictureMode(((PictureInPictureParams.Builder)mPictureInPictureParamsBuilder).build());
+        enterPictureInPictureMode(((PictureInPictureParams.Builder) mPictureInPictureParamsBuilder).build());
     }
 
     void setEndControlsVisible(boolean visible) {
@@ -2162,7 +2197,8 @@ public class PlayerActivity extends Activity {
                 skipToNext();
             }
         });
-        builder.setNegativeButton(android.R.string.cancel, (dialog, which) -> {});
+        builder.setNegativeButton(android.R.string.cancel, (dialog, which) -> {
+        });
         final AlertDialog dialog = builder.create();
         dialog.show();
     }
@@ -2239,7 +2275,7 @@ public class PlayerActivity extends Activity {
         scaleFactor = playerView.getVideoSurfaceView().getScaleX();
         playerView.removeCallbacks(playerView.textClearRunnable);
         playerView.clearIcon();
-        playerView.setCustomErrorMessage((int)(scaleFactor * 100) + "%");
+        playerView.setCustomErrorMessage((int) (scaleFactor * 100) + "%");
         playerView.hideController();
         isScaleStarting = true;
     }
@@ -2252,7 +2288,7 @@ public class PlayerActivity extends Activity {
         }
         scaleFactor = Utils.normalizeScaleFactor(scaleFactor, playerView.getScaleFit());
         playerView.setScale(scaleFactor);
-        playerView.setCustomErrorMessage((int)(scaleFactor * 100) + "%");
+        playerView.setCustomErrorMessage((int) (scaleFactor * 100) + "%");
     }
 
     private void scaleEnd() {

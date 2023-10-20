@@ -36,7 +36,7 @@ class SubtitleFetcher {
     }
 
     public void start() {
-
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP)
         new Thread(() -> {
 
             OkHttpClient client = new OkHttpClient.Builder()
